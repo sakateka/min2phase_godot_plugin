@@ -1,7 +1,7 @@
 # Min2Phase Rubik's Cube Solver
 # GDScript port of the min2phase algorithm
 # Based on Chen Shuang's Rust implementation
-# 
+#
 # This is a two-phase solver that first solves to G1 subgroup (U,D,R2,L2,F2,B2)
 # then solves to G0 subgroup (solved state).
 
@@ -74,18 +74,18 @@ static var P2MOVES = [0, 1, 2, 4, 7, 9, 10, 11, 13, 16, 3, 5, 6, 8, 12, 14, 15, 
 class Cubie:
 	var ca: PackedByteArray  # Corner array: 8 corners
 	var ea: PackedByteArray  # Edge array: 12 edges
-	
+
 	func _init():
 		ca.resize(8)
 		ea.resize(12)
 		reset()
-	
+
 	func reset():
 		for i in range(8):
 			ca[i] = i
 		for i in range(12):
 			ea[i] = i * 2
-	
+
 	func cmp(other: Cubie) -> int:
 		for i in range(8):
 			if ca[i] != other.ca[i]:
@@ -94,7 +94,7 @@ class Cubie:
 			if ea[i] != other.ea[i]:
 				return ea[i] - other.ea[i]
 		return 0
-	
+
 	func clone() -> Cubie:
 		var new_cubie = Cubie.new()
 		new_cubie.ca = ca.duplicate()
@@ -106,7 +106,7 @@ class Cubie:
 			ca[i] = c.ca[i]
 		for i in range(12):
 			ea[i] = c.ea[i]
-	
+
 	static func corn_mult(a: Cubie, b: Cubie, prod: Cubie):
 		for cn in range(8):
 			var ori_a = (a.ca[b.ca[cn] & 0x7] >> 3) & 0x7
@@ -114,23 +114,23 @@ class Cubie:
 			var ori = ori_a + (ori_b if ori_a < 3 else (6 - ori_b))
 			ori = (ori % 3) + (0 if (ori_a < 3) == (ori_b < 3) else 3)
 			prod.ca[cn] = (a.ca[b.ca[cn] & 0x7] & 0x7) | (ori << 3)
-	
+
 	static func edge_mult(a: Cubie, b: Cubie, prod: Cubie):
 		for ed in range(12):
 			prod.ea[ed] = a.ea[(b.ea[ed] >> 1) & 0x1F] ^ (b.ea[ed] & 1)
-	
+
 	static func inv(src: Cubie, inv: Cubie):
 		for ed in range(12):
 			inv.ea[(src.ea[ed] >> 1) & 0x1F] = (ed * 2) | (src.ea[ed] & 0x1)
 		for cn in range(8):
 			inv.ca[(src.ca[cn] & 0x7)] = cn | (((0x20 >> (src.ca[cn] >> 3)) & 0x18))
-	
+
 	func get_flip() -> int:
 		var idx = 0
 		for i in range(11):
 			idx = (idx << 1) | (ea[i] & 1)
 		return idx
-	
+
 	func set_flip(idx: int):
 		var parity = 0
 		for i in range(10, -1, -1):
@@ -139,13 +139,13 @@ class Cubie:
 			parity ^= val
 			ea[i] = (ea[i] & ~1) | val
 		ea[11] = (ea[11] & ~1) | parity
-	
+
 	func get_twst() -> int:
 		var idx = 0
 		for i in range(7):
 			idx += (idx << 1) + ((ca[i] >> 3) & 0x7)
 		return idx
-	
+
 	func set_twst(idx: int):
 		var twst = 15
 		for i in range(6, -1, -1):
@@ -154,77 +154,77 @@ class Cubie:
 			twst -= val
 			ca[i] = (ca[i] & 0x7) | (val << 3)
 		ca[7] = (ca[7] & 0x7) | ((twst % 3) << 3)
-	
+
 	func get_slice() -> int:
 		var arr = []
 		arr.resize(12)
 		for i in range(12):
 			arr[i] = ea[i] >> 1
 		return 494 - Min2Phase.get_comb(arr, 12, 8)
-	
+
 	func set_slice(idx: int):
 		var arr = []
 		arr.resize(12)
 		Min2Phase.set_comb(arr, 494 - idx, 12, 8)
 		for i in range(12):
 			ea[i] = (ea[i] & 1) | (arr[i] << 1)
-	
+
 	func get_cperm() -> int:
 		var arr = []
 		arr.resize(8)
 		for i in range(8):
 			arr[i] = ca[i] & 0x7
 		return Min2Phase.get_nperm(arr, 8)
-	
+
 	func set_cperm(idx: int):
 		var arr = []
 		arr.resize(8)
 		Min2Phase.set_nperm(arr, idx, 8)
 		for i in range(8):
 			ca[i] = (ca[i] & ~0x7) | arr[i]
-	
+
 	func get_eperm() -> int:
 		var arr = []
 		arr.resize(8)
 		for i in range(8):
 			arr[i] = (ea[i] >> 1) & 0x1F
 		return Min2Phase.get_nperm(arr, 8)
-	
+
 	func set_eperm(idx: int):
 		var arr = []
 		arr.resize(8)
 		Min2Phase.set_nperm(arr, idx, 8)
 		for i in range(8):
 			ea[i] = (ea[i] & 1) | (arr[i] << 1)
-	
+
 	func get_mperm() -> int:
 		var arr = []
 		arr.resize(4)
 		for i in range(8, 12):
 			arr[i - 8] = ((ea[i] >> 1) & 0x3)
 		return Min2Phase.get_nperm(arr, 4)
-	
+
 	func set_mperm(idx: int):
 		var arr = []
 		arr.resize(4)
 		Min2Phase.set_nperm(arr, idx, 4)
 		for i in range(8, 12):
 			ea[i] = (ea[i] & 1) | ((arr[i - 8] + 8) << 1)
-	
+
 	func get_ccomb() -> int:
 		var arr = []
 		arr.resize(8)
 		for i in range(8):
 			arr[i] = ca[i] & 0x7
 		return Min2Phase.get_comb(arr, 8, 0)
-	
+
 	func set_ccomb(idx: int):
 		var arr = []
 		arr.resize(8)
 		Min2Phase.set_comb(arr, idx, 8, 0)
 		for i in range(8):
 			ca[i] = (ca[i] & ~0x7) | arr[i]
-	
+
 	func verify() -> int:
 		var sum = 0
 		var edge_mask = 0
@@ -235,7 +235,7 @@ class Cubie:
 			return -2
 		elif sum != 0:
 			return -3
-		
+
 		var corn_mask = 0
 		for c in range(8):
 			corn_mask |= 1 << (ca[c] & 0x7)
@@ -244,7 +244,7 @@ class Cubie:
 			return -4
 		elif sum % 3 != 0:
 			return -5
-		
+
 		var parity = Min2Phase.get_nparity(get_cperm(), 8)
 		var ea_copy = ea.duplicate()
 		for i in range(12):
@@ -257,7 +257,7 @@ class Cubie:
 		if parity != 0:
 			return -6
 		return 0
-	
+
 	func random_reset():
 		var cperm = randi() % N_PERM
 		var parity = Min2Phase.get_nparity(cperm, 8)
@@ -276,16 +276,16 @@ class Cubie:
 			var temp = ea[10]
 			ea[10] = ea[11]
 			ea[11] = temp
-	
+
 	func from_facelet(facelet: String) -> int:
 		if facelet.length() < 54:
 			return -1
-		
+
 		var f = []
 		f.resize(54)
 		var colors = [facelet[4], facelet[13], facelet[22], facelet[31], facelet[40], facelet[49]]
 		var count = 0
-		
+
 		for i in range(54):
 			var found = false
 			for j in range(6):
@@ -296,10 +296,10 @@ class Cubie:
 					break
 			if not found:
 				return -1
-		
+
 		if count != 0x999999:
 			return -1
-		
+
 		reset()
 		var ori
 		for i in range(8):
@@ -314,7 +314,7 @@ class Cubie:
 				if col1 == Min2Phase.CORNER_FACELET[j][1] / 9 and col2 == Min2Phase.CORNER_FACELET[j][2] / 9:
 					ca[i] = (ori % 3) << 3 | j
 					break
-		
+
 		for i in range(12):
 			for j in range(12):
 				if f[Min2Phase.EDGE_FACELET[i][0]] == Min2Phase.EDGE_FACELET[j][0] / 9 and f[Min2Phase.EDGE_FACELET[i][1]] == Min2Phase.EDGE_FACELET[j][1] / 9:
@@ -323,28 +323,28 @@ class Cubie:
 				if f[Min2Phase.EDGE_FACELET[i][0]] == Min2Phase.EDGE_FACELET[j][1] / 9 and f[Min2Phase.EDGE_FACELET[i][1]] == Min2Phase.EDGE_FACELET[j][0] / 9:
 					ea[i] = (j << 1) | 1
 					break
-		
+
 		return 0
-	
+
 	func to_facelet() -> String:
 		var colors = ['U', 'R', 'F', 'D', 'L', 'B']
 		var f = []
 		f.resize(54)
 		for i in range(54):
 			f[i] = i / 9
-		
+
 		for c in range(8):
 			var j = ca[c] & 0x7
 			var ori = (ca[c] >> 3) & 0x7
 			for n in range(3):
 				f[Min2Phase.CORNER_FACELET[c][(n + ori) % 3]] = Min2Phase.CORNER_FACELET[j][n] / 9
-		
+
 		for e in range(12):
 			var j = (ea[e] >> 1) & 0x1F
 			var ori = ea[e] & 1
 			for n in range(2):
 				f[Min2Phase.EDGE_FACELET[e][(n + ori) % 2]] = Min2Phase.EDGE_FACELET[j][n] / 9
-		
+
 		var buf = ""
 		for i in range(54):
 			buf += colors[f[i]]
@@ -358,10 +358,10 @@ class Coord:
 	var fsym: int = 0
 	var slice: int = 0
 	var prun: int = 0
-	
+
 	func _init():
 		pass
-	
+
 	func from_cubie(stbl: StaticTables, src: Cubie) -> int:
 		slice = src.get_slice()
 		flip = stbl.flip_raw2sym[src.get_flip()]
@@ -375,7 +375,7 @@ class Coord:
 			Min2Phase.get_pruning(stbl.slice_flip_prun, flip * N_SLICE + stbl.slice_conj[slice * 8 + fsym])
 		)
 		return prun
-	
+
 	func move_prun(sctx: StaticContext, stbl: StaticTables, src: Coord, mv: int) -> int:
 		slice = stbl.slice_move[src.slice * N_MOVES_P1 + mv]
 		flip = stbl.flip_move[src.flip * N_MOVES_P1 + sctx.symmove[mv][src.fsym]]
@@ -397,10 +397,10 @@ class Coord2:
 	var corn: int = 0
 	var csym: int = 0
 	var mid: int = 0
-	
+
 	func _init():
 		pass
-	
+
 	func from_cubie(sctx: StaticContext, stbl: StaticTables, src: Cubie) -> int:
 		corn = Min2Phase.esym2csym(stbl.eperm_raw2sym[src.get_cperm()])
 		csym = corn & 0xf
@@ -427,19 +427,19 @@ class Solution:
 	var premv_len: int = 0
 	var length: int = 0
 	var moves: PackedByteArray
-	
+
 	func _init():
 		moves.resize(31)
-	
+
 	func append_move(cur_move: int):
 		if length == 0:
 			moves[length] = cur_move
 			length += 1
 			return
-		
+
 		var cur_axis = cur_move / 3
 		var last_axis = moves[length - 1] / 3
-		
+
 		if cur_axis == last_axis:
 			var pow = (cur_move % 3 + moves[length - 1] % 3 + 1) % 4
 			if pow == 3:
@@ -447,7 +447,7 @@ class Solution:
 			else:
 				moves[length - 1] = cur_axis * 3 + pow
 			return
-		
+
 		if length > 1 and cur_axis % 3 == last_axis % 3 and cur_axis == moves[length - 2] / 3:
 			var pow = (cur_move % 3 + moves[length - 2] % 3 + 1) % 4
 			if pow == 3:
@@ -456,14 +456,14 @@ class Solution:
 			else:
 				moves[length - 2] = cur_axis * 3 + pow
 			return
-		
+
 		moves[length] = cur_move
 		length += 1
-	
+
 	func to_str() -> String:
 		var buf = ""
 		var urf = (urf_idx + 3) % 6 if (verbose & INVERSE_SOLUTION) != 0 else urf_idx
-		
+
 		if urf < 3:
 			for s in range(length):
 				if (verbose & USE_SEPARATOR) != 0 and s == depth1:
@@ -474,10 +474,10 @@ class Solution:
 				buf += Min2Phase.MOVE2STR[Min2Phase.URF_MOVE[urf][moves[s]]].strip_edges() + " "
 				if (verbose & USE_SEPARATOR) != 0 and s == depth1:
 					buf += ".  "
-		
+
 		if (verbose & APPEND_LENGTH) != 0:
 			buf += "(" + str(length) + "f)"
-		
+
 		return buf.strip_edges()
 
 # Helper functions for permutation and combination calculations
@@ -562,7 +562,7 @@ class IdaContext:
 	var probes: int = 0
 	var min_probes: int = 0
 	var solution: Solution
-	
+
 	func _init():
 		mv.resize(30)
 		premv.resize(15)
@@ -573,13 +573,13 @@ class IdaContext:
 		for i in range(6):
 			urf_cubies[i] = Cubie.new()
 		solution = Solution.new()
-	
+
 	func solve_cubie(sctx: StaticContext, stbl: StaticTables, cc: Cubie, target_length: int) -> String:
 		var cc1 = cc.clone()
 		var cc2 = Cubie.new()
 		target_length = target_length + 1
 		probes = 0
-		
+
 		# Generate URF symmetry variants
 		for i in range(6):
 			urf_cubies[i].copy_from(cc1)
@@ -590,14 +590,14 @@ class IdaContext:
 			if i == 2:
 				Cubie.inv(cc1, cc2)
 				cc1.copy_from(cc2)
-		
+
 		# Try different phase 1 lengths
 		for l1 in range(21):
 			length1 = l1
 			max_depth2 = min(MAX_DEPTH2, target_length - length1 - 1)
 			depth1 = length1 - premv_len
 			allow_shorter = false
-			
+
 			# Try different URF symmetries
 			for j in range(6):
 				urf_idx = j
@@ -606,9 +606,9 @@ class IdaContext:
 				if ret == 0:
 					var solbuf: String = solution.to_str()
 					return solbuf
-		
+
 		return "Error 8"
-	
+
 	func phase1_pre_moves(sctx: StaticContext, stbl: StaticTables, maxl: int, lm: int, cc: Cubie) -> int:
 		premv_len = MAX_PREMV_LEN - maxl
 		if premv_len == 0 or ((0x667667 >> lm) & 1) == 0:
@@ -620,35 +620,35 @@ class IdaContext:
 				var ret = phase1(sctx, stbl, node, 0, depth1, -1)
 				if ret == 0:
 					return 0
-		
+
 		if maxl == 0 or premv_len + MIN_P1PRE_LEN >= length1:
 			return 1
-		
+
 		var skip_moves = 0
 		if maxl == 1 or premv_len + 1 + MIN_P1PRE_LEN >= length1:
 			skip_moves = 0x227227
-		
+
 		var cd = Cubie.new()
 		lm = lm / 3
-		
+
 		for m in range(18):
 			if m / 3 == lm or m / 3 == lm - 3 or m / 3 == lm + 3:
 				continue
 			if (skip_moves & (1 << m)) != 0:
 				continue
-			
+
 			Cubie.corn_mult(sctx.movecube[m], cc, cd)
 			Cubie.edge_mult(sctx.movecube[m], cc, cd)
 			premv[MAX_PREMV_LEN - maxl] = m
 			var ret = phase1_pre_moves(sctx, stbl, maxl - 1, m, cd)
 			if ret == 0:
 				return 0
-		
+
 		return 1
-	
+
 	func phase1(sctx: StaticContext, stbl: StaticTables, node: Coord, _ssym: int, maxl: int, lm: int) -> int:
 		var next_node = Coord.new()
-		
+
 		if node.prun == 0 and maxl < 5:
 			if allow_shorter or maxl == 0:
 				depth1 -= maxl
@@ -657,7 +657,7 @@ class IdaContext:
 				return ret
 			else:
 				return 1
-		
+
 		for axis in range(0, N_MOVES_P1, 3):
 			if axis == lm or axis == lm - 9:
 				continue
@@ -668,7 +668,7 @@ class IdaContext:
 					break
 				elif prun == maxl:
 					continue
-				
+
 				mv[depth1 - maxl] = m
 				valid1 = min(valid1, depth1 - maxl)
 				var ret = phase1(sctx, stbl, next_node, 0, maxl - 1, axis)
@@ -676,33 +676,33 @@ class IdaContext:
 					return 0
 				elif ret >= 2:
 					break
-		
+
 		return 1
-	
+
 	func init_phase2(sctx: StaticContext, stbl: StaticTables) -> int:
 		probes += 1
 		var cc = p1_cubies[0].clone() if depth1 == 0 else Cubie.new()
-		
+
 		for i in range(valid1, depth1):
 			Cubie.corn_mult(p1_cubies[i], sctx.movecube[mv[i]], cc)
 			Cubie.edge_mult(p1_cubies[i], sctx.movecube[mv[i]], cc)
 			p1_cubies[i + 1].copy_from(cc)
-		
+
 		valid1 = depth1
 		var node1 = Coord2.new()
 		var prun = node1.from_cubie(sctx, stbl, cc)
 		var node2 = Coord2.new()
-		
+
 		if premv_len > 0:
 			var m = premv[premv_len - 1] / 3 * 3 + 1
 			var cd = Cubie.new()
 			Cubie.corn_mult(sctx.movecube[m], cc, cd)
 			Cubie.edge_mult(sctx.movecube[m], cc, cd)
 			prun = min(prun, node2.from_cubie(sctx, stbl, cd))
-		
+
 		if prun > max_depth2:
 			return prun - max_depth2
-		
+
 		var depth2 = max_depth2
 		while depth2 >= prun:
 			var sol_src = 0
@@ -712,43 +712,43 @@ class IdaContext:
 				ret = phase2(sctx, stbl, node2, depth2, depth1, 10)
 			if ret < 0:
 				break
-			
+
 			depth2 -= ret
 			target_length = 0
 			solution.length = 0
 			solution.urf_idx = urf_idx
 			solution.depth1 = depth1
 			solution.premv_len = premv_len
-			
+
 			for i in range(depth1 + depth2):
 				solution.append_move(mv[i])
-			
+
 			if sol_src == 1:
 				solution.append_move(premv[premv_len - 1] / 3 * 3 + 1)
-			
+
 			for i in range(premv_len - 1, -1, -1):
 				solution.append_move(premv[i])
-			
+
 			target_length = solution.length
 			depth2 -= 1
-		
+
 		if depth2 != max_depth2:
 			max_depth2 = min(MAX_DEPTH2, target_length - length1 - 1)
 			return 0 if probes >= min_probes else 1
-		
+
 		return 1
-	
+
 	func phase2(sctx: StaticContext, stbl: StaticTables, node: Coord2, maxl: int, depth: int, lm: int) -> int:
 		if node.edge == 0 and node.corn == 0 and node.mid == 0:
 			return maxl
-		
+
 		var move_mask = sctx.canon_masks2[lm]
 		var nodex = Coord2.new()
-		
+
 		for m in range(N_MOVES_P2):
 			if (move_mask >> m & 1) != 0:
 				continue
-			
+
 			nodex.mid = stbl.mperm_move[node.mid * N_MOVES_P2 + m]
 			nodex.corn = stbl.cperm_move[node.corn * N_MOVES_P2 + sctx.symmove2[m][node.csym]]
 			nodex.csym = sctx.symmult[nodex.corn & 0xf][node.csym]
@@ -756,33 +756,33 @@ class IdaContext:
 			nodex.edge = stbl.eperm_move[node.edge * N_MOVES_P2 + sctx.symmove2[m][node.esym]]
 			nodex.esym = sctx.symmult[nodex.edge & 0xf][node.esym]
 			nodex.edge = nodex.edge >> 4
-			
+
 			var edgei = Min2Phase.get_perm_sym_inv(sctx, stbl, nodex.edge, nodex.esym, 0)
 			var corni = Min2Phase.get_perm_sym_inv(sctx, stbl, nodex.corn, nodex.csym, 1)
 			var prun = Min2Phase.get_pruning(stbl.ccomb_eperm_prun,
 				(edgei >> 4) * N_CCOMB +
 				stbl.ccomb_conj[stbl.cperm2comb[corni >> 4] * 16 + sctx.symmuli[edgei & 0xf][corni & 0xf]])
-			
+
 			if prun > maxl + 1:
 				return maxl - prun + 1
 			elif prun >= maxl:
 				continue
-			
+
 			prun = max(
 				Min2Phase.get_pruning(stbl.mperm_cperm_prun, nodex.corn * N_MPERM + stbl.mperm_conj[nodex.mid * 16 + nodex.csym]),
 				Min2Phase.get_pruning(stbl.ccomb_eperm_prun, nodex.edge * N_CCOMB + stbl.ccomb_conj[stbl.cperm2comb[nodex.corn] * 16 + sctx.symmuli[nodex.esym][nodex.csym]])
 			)
-			
+
 			if prun >= maxl:
 				continue
-			
+
 			var ret = phase2(sctx, stbl, nodex, maxl - 1, depth + 1, m)
 			if ret >= 0:
 				mv[depth] = Min2Phase.P2MOVES[m]
 				return ret
 			elif ret < -2:
 				break
-		
+
 		return -1
 
 # Static context for move tables and symmetry
@@ -796,7 +796,7 @@ class StaticContext:
 	var canon_masks2: PackedInt32Array
 	var symurf: Cubie
 	var symurfi: Cubie
-	
+
 	func _init():
 		movecube.resize(18)
 		symcube.resize(16)
@@ -805,7 +805,7 @@ class StaticContext:
 		symmove.resize(18)
 		symmove2.resize(18)
 		canon_masks2.resize(11)
-		
+
 		for i in range(18):
 			movecube[i] = Cubie.new()
 		for i in range(16):
@@ -819,16 +819,16 @@ class StaticContext:
 			symmove2[i] = []
 			symmove[i].resize(8)
 			symmove2[i].resize(16)
-		
+
 		symurf = Cubie.new()
 		symurfi = Cubie.new()
 		init()
-	
+
 	func init():
 		var movebase = [
 			Cubie.new(), Cubie.new(), Cubie.new(), Cubie.new(), Cubie.new(), Cubie.new()
 		]
-		
+
 		movebase[0].ca = [3, 0, 1, 2, 4, 5, 6, 7]
 		movebase[0].ea = [6, 0, 2, 4, 8, 10, 12, 14, 16, 18, 20, 22]
 		movebase[1].ca = [20, 1, 2, 8, 15, 5, 6, 19]
@@ -841,7 +841,7 @@ class StaticContext:
 		movebase[4].ea = [0, 2, 20, 6, 8, 10, 18, 14, 16, 4, 12, 22]
 		movebase[5].ca = [0, 1, 11, 23, 4, 5, 18, 14]
 		movebase[5].ea = [0, 2, 4, 23, 8, 10, 12, 21, 16, 18, 7, 15]
-		
+
 		# Generate all 18 moves
 		for i in range(18):
 			if i % 3 == 0:
@@ -851,23 +851,23 @@ class StaticContext:
 				Cubie.corn_mult(movecube[i - 1], movebase[i / 3], cc)
 				Cubie.edge_mult(movecube[i - 1], movebase[i / 3], cc)
 				movecube[i].copy_from(cc)
-		
+
 		# Symmetry cubes
 		var u4 = Cubie.new()
 		u4.ca = [3, 0, 1, 2, 7, 4, 5, 6]
 		u4.ea = [6, 0, 2, 4, 14, 8, 10, 12, 23, 17, 19, 21]
-		
+
 		var lr2 = Cubie.new()
 		lr2.ca = [25, 24, 27, 26, 29, 28, 31, 30]
 		lr2.ea = [4, 2, 0, 6, 12, 10, 8, 14, 18, 16, 22, 20]
-		
+
 		var f2 = Cubie.new()
 		f2.ca = [5, 4, 7, 6, 1, 0, 3, 2]
 		f2.ea = [12, 10, 8, 14, 4, 2, 0, 6, 18, 16, 22, 20]
-		
+
 		var cc = Cubie.new()
 		var cd = Cubie.new()
-		
+
 		# Generate symmetry cubes
 		for i in range(16):
 			symcube[i].copy_from(cc)
@@ -882,13 +882,13 @@ class StaticContext:
 				Cubie.corn_mult(cc, f2, cd)
 				Cubie.edge_mult(cc, f2, cd)
 				cc.copy_from(cd)
-		
+
 		# URF symmetry
 		symurf.ca = [8, 20, 13, 17, 19, 15, 22, 10]
 		symurf.ea = [3, 16, 11, 18, 7, 22, 15, 20, 1, 9, 13, 5]
 		Cubie.corn_mult(symurf, symurf, symurfi)
 		Cubie.edge_mult(symurf, symurf, symurfi)
-		
+
 		# Symmetry multiplication tables
 		for i in range(16):
 			for j in range(16):
@@ -898,13 +898,13 @@ class StaticContext:
 					if cc.cmp(symcube[k]) == 0:
 						symmult[i][j] = k
 						symmuli[k][j] = i
-		
+
 		# P2MOVES inverse mapping
 		var p2moves_imap = []
 		p2moves_imap.resize(18)
 		for i in range(18):
 			p2moves_imap[Min2Phase.P2MOVES[i]] = i
-		
+
 		# Symmetry move tables
 		for i in range(18):
 			for j in range(16):
@@ -918,7 +918,7 @@ class StaticContext:
 						if j % 2 == 0:
 							symmove[i][j / 2] = k
 						break
-		
+
 		# Canonical masks for phase 2
 		for i in range(10):
 			var ix = Min2Phase.P2MOVES[i] / 3
@@ -955,8 +955,13 @@ class StaticTables:
 	var slice_twst_prun: PackedInt32Array
 	var ccomb_eperm_prun: PackedInt32Array
 	var mperm_cperm_prun: PackedInt32Array
-	
+
 	func _init(sctx: StaticContext):
+		if load_from_json():
+			print("Successfully loaded precomputed static tables")
+			return
+
+		print("Precomputed tables not found or invalid, computing tables...")
 		perm_sym_inv.resize(N_PERM_SYM)
 		cperm2comb.resize(N_PERM_SYM)
 		flip_sym2raw.resize(N_FLIP_SYM)
@@ -984,13 +989,23 @@ class StaticTables:
 		mperm_cperm_prun.resize(N_MPERM * N_PERM_SYM / 8 + 1)
 
 		init(sctx)
-	
+
+		# Export computed tables to JSON file
+		var json_data = export_as_json()
+		var file = FileAccess.open("res://static_tables.json", FileAccess.WRITE)
+		if file:
+			file.store_string(json_data)
+			file.close()
+			print("Static tables exported to res://static_tables.json")
+		else:
+			print("Error: Could not write static_tables.json")
+
 	func init(sctx: StaticContext):
 		var start_time = Time.get_ticks_msec()
 		Min2Phase.init_sym2raw(sctx, N_FLIP, 0, flip_sym2raw, flip_raw2sym, flip_selfsym)
 		var end_time = Time.get_ticks_msec() - start_time
 		print("#1 init_sym2raw call time: ", end_time)
-		
+
 		start_time = Time.get_ticks_msec()
 		Min2Phase.init_sym2raw(sctx, N_TWST, 1, twst_sym2raw, twst_raw2sym, twst_selfsym)
 		end_time = Time.get_ticks_msec() - start_time
@@ -1000,7 +1015,7 @@ class StaticTables:
 		Min2Phase.init_sym2raw(sctx, N_PERM, 2, eperm_sym2raw, eperm_raw2sym, eperm_selfsym)
 		end_time = Time.get_ticks_msec() - start_time
 		print("#3 init_sym2raw call time: ", end_time)
-		
+
 		start_time = Time.get_ticks_msec()
 		Min2Phase.init_move_tables(sctx, self)
 		end_time = Time.get_ticks_msec() - start_time
@@ -1026,6 +1041,101 @@ class StaticTables:
 		end_time = Time.get_ticks_msec() - start_time
 		print("#4 init_raw_sym_prun call time: ", end_time)
 
+	# Export all computed static tables as JSON
+	func export_as_json() -> String:
+		var tables = {
+			"perm_sym_inv": perm_sym_inv,
+			"cperm2comb": cperm2comb,
+			"flip_sym2raw": flip_sym2raw,
+			"flip_raw2sym": flip_raw2sym,
+			"flip_selfsym": flip_selfsym,
+			"twst_sym2raw": twst_sym2raw,
+			"twst_raw2sym": twst_raw2sym,
+			"twst_selfsym": twst_selfsym,
+			"eperm_sym2raw": eperm_sym2raw,
+			"eperm_raw2sym": eperm_raw2sym,
+			"eperm_selfsym": eperm_selfsym,
+			"flip_move": flip_move,
+			"twst_move": twst_move,
+			"slice_move": slice_move,
+			"slice_conj": slice_conj,
+			"cperm_move": cperm_move,
+			"eperm_move": eperm_move,
+			"mperm_move": mperm_move,
+			"mperm_conj": mperm_conj,
+			"ccomb_move": ccomb_move,
+			"ccomb_conj": ccomb_conj,
+			"slice_flip_prun": slice_flip_prun,
+			"slice_twst_prun": slice_twst_prun,
+			"ccomb_eperm_prun": ccomb_eperm_prun,
+			"mperm_cperm_prun": mperm_cperm_prun
+		}
+
+		var json_string = JSON.stringify(tables)
+		return json_string
+
+	# Load precomputed tables from JSON file
+	func load_from_json() -> bool:
+		var file = FileAccess.open("res://static_tables.json", FileAccess.READ)
+		if not file:
+			return false
+
+		var json_string = file.get_as_text()
+		file.close()
+
+		var json = JSON.new()
+		var parse_result = json.parse(json_string)
+		if parse_result != OK:
+			print("Error parsing JSON: ", json.get_error_message())
+			return false
+
+		var data = json.get_data()
+		if not data is Dictionary:
+			print("Error: JSON data is not a dictionary")
+			return false
+
+		# Load all tables from JSON
+		var table_names = [
+			"perm_sym_inv", "cperm2comb", "flip_sym2raw", "flip_raw2sym", "flip_selfsym",
+			"twst_sym2raw", "twst_raw2sym", "twst_selfsym", "eperm_sym2raw", "eperm_raw2sym", "eperm_selfsym",
+			"flip_move", "twst_move", "slice_move", "slice_conj", "cperm_move", "eperm_move",
+			"mperm_move", "mperm_conj", "ccomb_move", "ccomb_conj",
+			"slice_flip_prun", "slice_twst_prun", "ccomb_eperm_prun", "mperm_cperm_prun"
+		]
+
+		for table_name in table_names:
+			if not table_name in data:
+				print("Error: Missing table '", table_name, "' in JSON")
+				return false
+
+			var table_data = data[table_name]
+			if table_data is String:
+				parse_result = json.parse(table_data)
+				if parse_result != OK:
+					print("Error: Failed to parse JSON for table '", table_name, "'")
+					return false
+				table_data = json.get_data()
+
+			if not (table_data is Array or table_data is PackedByteArray):
+				print("Error: Table '", table_name, "' is not an array: ", table_data)
+				return false
+
+			# Convert array to appropriate PackedArray type
+			var target_array = get(table_name)
+			if target_array is PackedInt32Array:
+				target_array.resize(table_data.size())
+				for i in range(table_data.size()):
+					target_array[i] = int(table_data[i])
+			elif target_array is PackedByteArray:
+				target_array.resize(table_data.size())
+				for i in range(table_data.size()):
+					target_array[i] = int(table_data[i])
+			else:
+				print("Error: Unknown array type for table '", table_name, "'")
+				return false
+
+		return true
+
 # Functions for initializing move tables and pruning tables
 static func init_sym2raw(sctx: StaticContext, n_raw: int, coord: int, sym2raw: PackedInt32Array, raw2sym: PackedInt32Array, selfsym: PackedInt32Array) -> int:
 	var c = Cubie.new()
@@ -1033,21 +1143,21 @@ static func init_sym2raw(sctx: StaticContext, n_raw: int, coord: int, sym2raw: P
 	var d = Cubie.new()
 	var sym_inc = 1 if coord >= 2 else 2
 	var sym_shift = 0 if coord >= 2 else 1
-	
+
 	for i in range(n_raw):
 		raw2sym[i] = 0
-	
+
 	var count = 0
 	for i in range(n_raw):
 		if raw2sym[i] as int != 0:
 			continue
-		
+
 		match coord:
 			0: c.set_flip(i)
 			1: c.set_twst(i)
 			2: c.set_eperm(i)
 			_: push_error("Invalid coordinate: coord=", coord)
-		
+
 		for s in range(0, 16, sym_inc):
 			if coord == 1:
 				Cubie.corn_mult(sctx.symcube[sctx.symmuli[0][s]], c, e)
@@ -1055,26 +1165,26 @@ static func init_sym2raw(sctx: StaticContext, n_raw: int, coord: int, sym2raw: P
 			else:
 				Cubie.edge_mult(sctx.symcube[sctx.symmuli[0][s]], c, e)
 				Cubie.edge_mult(e, sctx.symcube[s], d)
-			
+
 			var idx
 			match coord:
 				0: idx = d.get_flip()
 				1: idx = d.get_twst()
 				2: idx = d.get_eperm()
-			
+
 			if idx == i:
 				selfsym[count] |= 1 << (s >> sym_shift)
 			raw2sym[idx] = ((count << 4 | s) >> sym_shift)
-		
+
 		sym2raw[count] = i
 		count += 1
-	
+
 	return count
 
 static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 	var c = Cubie.new()
 	c.reset()
-	
+
 	# Flip move table
 	for i in range(N_FLIP_SYM):
 		c.set_flip(stbl.flip_sym2raw[i])
@@ -1082,7 +1192,7 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			var d = Cubie.new()
 			Cubie.edge_mult(c, sctx.movecube[j], d)
 			stbl.flip_move[i * N_MOVES_P1 + j] = stbl.flip_raw2sym[d.get_flip()]
-	
+
 	# Twist move table
 	for i in range(N_TWST_SYM):
 		c.set_twst(stbl.twst_sym2raw[i])
@@ -1090,7 +1200,7 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			var d = Cubie.new()
 			Cubie.corn_mult(c, sctx.movecube[j], d)
 			stbl.twst_move[i * N_MOVES_P1 + j] = stbl.twst_raw2sym[d.get_twst()]
-	
+
 	# Slice move and conjugate tables
 	for i in range(N_SLICE):
 		c.set_slice(i)
@@ -1098,14 +1208,14 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			var d = Cubie.new()
 			Cubie.edge_mult(c, sctx.movecube[j], d)
 			stbl.slice_move[i * N_MOVES_P1 + j] = d.get_slice()
-		
+
 		for j in range(8):
 			var e = Cubie.new()
 			var d = Cubie.new()
 			Cubie.edge_mult(sctx.symcube[j << 1], c, e)
 			Cubie.edge_mult(e, sctx.symcube[j << 1], d)
 			stbl.slice_conj[i * 8 + j] = d.get_slice()
-	
+
 	# Phase 2 move tables
 	c.reset()
 	for i in range(N_PERM_SYM):
@@ -1117,12 +1227,12 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			Cubie.edge_mult(c, sctx.movecube[P2MOVES[j]], d)
 			stbl.cperm_move[i * N_MOVES_P2 + j] = esym2csym(stbl.eperm_raw2sym[d.get_cperm()])
 			stbl.eperm_move[i * N_MOVES_P2 + j] = stbl.eperm_raw2sym[d.get_eperm()]
-		
+
 		var d = Cubie.new()
 		Cubie.inv(c, d)
 		stbl.perm_sym_inv[i] = stbl.eperm_raw2sym[d.get_eperm()]
 		stbl.cperm2comb[i] = c.get_ccomb()
-	
+
 	# M-perm move and conjugate tables
 	for i in range(N_MPERM):
 		c.set_mperm(i)
@@ -1130,14 +1240,14 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			var d = Cubie.new()
 			Cubie.edge_mult(c, sctx.movecube[P2MOVES[j]], d)
 			stbl.mperm_move[i * N_MOVES_P2 + j] = d.get_mperm()
-		
+
 		for j in range(16):
 			var e = Cubie.new()
 			var d = Cubie.new()
 			Cubie.edge_mult(sctx.symcube[j], c, e)
 			Cubie.edge_mult(e, sctx.symcube[sctx.symmuli[0][j]], d)
 			stbl.mperm_conj[i * 16 + j] = d.get_mperm()
-	
+
 	# C-comb move and conjugate tables
 	for i in range(N_CCOMB):
 		c.set_ccomb(i)
@@ -1145,7 +1255,7 @@ static func init_move_tables(sctx: StaticContext, stbl: StaticTables):
 			var d = Cubie.new()
 			Cubie.corn_mult(c, sctx.movecube[P2MOVES[j]], d)
 			stbl.ccomb_move[i * N_MOVES_P2 + j] = d.get_ccomb()
-		
+
 		for j in range(16):
 			var e = Cubie.new()
 			var d = Cubie.new()
@@ -1165,17 +1275,17 @@ static func init_raw_sym_prun(prun_table: PackedInt32Array, raw_move: PackedInt3
 	var is_phase2 = 1 if (prun_flag >> 5) & 1 == 1 else 0
 	var inv_depth = (prun_flag >> 8) & 0xf
 	var max_depth = (prun_flag >> 12) & 0xf
-	
+
 	var sym_mask = (1 << sym_shift) - 1
 	var n_entries = n_raw * n_sym
 	var n_moves = N_MOVES_P2 if is_phase2 != 0 else N_MOVES_P1
-	
+
 	var depth = 0
-	
+
 	for i in range(n_entries / 8 + 1):
 		prun_table[i] = 0xffffffff
 	Min2Phase.set_pruning(prun_table, 0, 0xf)
-	
+
 	while depth < max_depth:
 		var inv = depth > inv_depth
 		var select = 0xf if inv else depth
@@ -1184,39 +1294,39 @@ static func init_raw_sym_prun(prun_table: PackedInt32Array, raw_move: PackedInt3
 		var xor_val = depth ^ 0xf
 		var val = 0
 		var i = 0
-		
+
 		while i < n_entries:
 			if (i & 7) == 0:
 				val = prun_table[i >> 3]
 				if not inv and val == 0xffffffff:
 					i += 8
 					continue
-			
+
 			if (val & 0xf) != select:
 				i += 1
 				val >>= 4
 				continue
-			
+
 			var raw: int = i % n_raw
 			var sym: int = i / n_raw
-			
+
 			for m in range(n_moves):
 				var symx = sym_move[sym * n_moves + m]
 				var rawx = raw_conj[raw_move[raw * n_moves + m] << sym_shift | (symx & sym_mask)]
 				symx = symx >> sym_shift
 				var idx = symx * n_raw + rawx
 				var prun = get_pruning(prun_table, idx)
-				
+
 				if prun != check:
 					continue
-				
+
 				if inv:
 					set_pruning(prun_table, i, xor_val)
 					break
-				
+
 				set_pruning(prun_table, idx, xor_val)
 				idx = idx - rawx
-				
+
 				for j in range(1, 16):
 					var ssmask = sym_selfsym[symx]
 					if (ssmask >> j) & 1 == 0:
@@ -1224,7 +1334,7 @@ static func init_raw_sym_prun(prun_table: PackedInt32Array, raw_move: PackedInt3
 					var idxx = idx + raw_conj[((rawx << sym_shift) | (j ^ (sym_e2c_magic >> (j << 1) & 3)))]
 					if get_pruning(prun_table, idxx) == check:
 						set_pruning(prun_table, idxx, xor_val)
-			
+
 			i += 1
 			val >>= 4
 
@@ -1281,11 +1391,11 @@ func solve(facelet: String, maxl: int = 21) -> String:
 	var cc = Cubie.new()
 	if cc.from_facelet(facelet) < 0:
 		return "Error 1"
-	
+
 	var verify = cc.verify()
 	if verify < 0:
 		return "Error " + str(-verify)
-	
+
 	var ctx = IdaContext.new()
 	return ctx.solve_cubie(global_sctx, global_stbl, cc, min(25, maxl))
 
@@ -1315,16 +1425,16 @@ func apply_moves(facelet: String, cube_moves: String) -> String:
 	var cc = Cubie.new()
 	if cc.from_facelet(facelet) < 0:
 		return ""
-	
+
 	var verify = cc.verify()
 	if verify < 0:
 		return ""
-	
+
 	var s = cube_moves.strip_edges()
 	var axis = 0
 	var pow = 0
 	var cd = Cubie.new()
-	
+
 	for i in range(s.length()):
 		var c = s[i]
 		match c:
@@ -1346,12 +1456,12 @@ func apply_moves(facelet: String, cube_moves: String) -> String:
 			'2': pow = pow * 2 % 4
 			'+', '1', ' ', '\t': pass
 			_: return ""
-	
+
 	if pow != 0:
 		Cubie.corn_mult(cc, global_sctx.movecube[axis * 3 + pow - 1], cd)
 		Cubie.edge_mult(cc, global_sctx.movecube[axis * 3 + pow - 1], cd)
 		cc.copy_from(cd)
-	
+
 	return cc.to_facelet()
 
 # Generate a random move sequence in specific number of moves
@@ -1366,7 +1476,7 @@ func random_moves(n_moves: int) -> String:
 	var last_axis = 18
 	var scramble = ""
 	var i = 0
-	
+
 	while i < n_moves:
 		var mv = randi() % 18
 		var axis = mv / 3
@@ -1375,5 +1485,5 @@ func random_moves(n_moves: int) -> String:
 		last_axis = axis
 		scramble += MOVE2STR[mv].strip_edges() + " "
 		i += 1
-	
+
 	return scramble.strip_edges()
