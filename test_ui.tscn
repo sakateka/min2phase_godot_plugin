@@ -1,0 +1,92 @@
+[gd_scene load_steps=3 format=3 uid="uid://b03u3odnejwx3"]
+
+[ext_resource type="Script" uid="uid://dvf8nkkoy4m07" path="res://test_ui.gd" id="1_1yh2p"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i11ae"]
+bg_color = Color(0.219501, 0.219501, 0.219501, 1)
+
+[node name="TestUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1yh2p")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Min2Phase Rubik's Cube Solver - Test Interface"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBox"]
+layout_mode = 2
+
+[node name="InputSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="FaceletLabel" type="Label" parent="VBox/InputSection"]
+layout_mode = 2
+text = "Cube Facelet (54 characters):"
+
+[node name="FaceletInput" type="LineEdit" parent="VBox/InputSection"]
+layout_mode = 2
+placeholder_text = "Enter 54-character facelet string..."
+
+[node name="MovesLabel" type="Label" parent="VBox/InputSection"]
+layout_mode = 2
+text = "Moves to Apply:"
+
+[node name="MovesInput" type="LineEdit" parent="VBox/InputSection"]
+layout_mode = 2
+placeholder_text = "Enter moves like: R U R' U' F..."
+
+[node name="ButtonSection" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="SolveButton" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Solve Cube"
+
+[node name="RandomButton" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Random Cube"
+
+[node name="ScrambleButton" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Generate Scramble"
+
+[node name="ApplyMovesButton" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Apply Moves"
+
+[node name="ClearButton" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Clear Output"
+
+[node name="ResetCube" type="Button" parent="VBox/ButtonSection"]
+layout_mode = 2
+text = "Reset Cube"
+
+[node name="OutputLabel" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Output:"
+
+[node name="OutputText" type="TextEdit" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_i11ae")
+editable = false
+scroll_smooth = true
